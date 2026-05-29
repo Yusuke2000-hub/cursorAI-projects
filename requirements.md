@@ -251,7 +251,7 @@ erDiagram
 | cards | list_id | リストに属するカード取得の高速化 |
 | cards | (list_id, position) | ソート付きカード取得の高速化 |
 
-SQLite では単一カラムのインデックスで十分なケースが多いが、並べ替えクエリの頻度が高い場合は複合インデックスを検討する。
+MySQL では複合インデックスがソートクエリの最適化に有効なため、並べ替えクエリが頻繁な場合は `(board_id, position)` / `(list_id, position)` の複合インデックスを活用する。
 
 ### 3.6 フロントエンド向け型（フェーズ別）
 
@@ -391,7 +391,7 @@ flowchart TD
 | フェーズ | 永続化 | 構成 | 状態 |
 |---------|--------|------|------|
 | Phase 1 | localStorage | フロントエンド単体（React + Vite） | 実装済み |
-| Phase 2 | SQLite（API 経由） | フロントエンド + バックエンド（Express） | 今後実装 |
+| Phase 2 | MySQL（API 経由） | フロントエンド + バックエンド（Express） | 今後実装 |
 
 Phase 1 はバックエンド不要でブラウザのみで動作する。Phase 2 移行時に API クライアントを追加し、localStorage 依存を除去する。
 
@@ -408,8 +408,8 @@ Phase 1 はバックエンド不要でブラウザのみで動作する。Phase 
 | バックエンド | ランタイム | Node.js | JavaScript/TypeScript で統一し学習コストを抑える |
 | バックエンド | フレームワーク | Express | 軽量 REST API の構築が容易 |
 | バックエンド | 言語 | TypeScript | フロントと型定義を共有しやすい |
-| データベース | RDBMS | SQLite | セットアップ不要、学習・提出に適する |
-| データベース | ORM / クエリ | better-sqlite3 または Prisma | マイグレーション・CRUD の習得 |
+| データベース | RDBMS | MySQL | 実務でよく使われる RDBMS の習得 |
+| データベース | ORM / クエリ | Prisma | マイグレーション・CRUD の習得、MySQL 対応 |
 | 開発 | パッケージ管理 | npm | 標準的な Node エコシステム |
 
 ### 5.2 システム構成図
@@ -422,7 +422,7 @@ flowchart TB
     end
     subgraph server [サーバー ローカル]
         API[Express REST API]
-        DB[(SQLite)]
+        DB[(MySQL)]
     end
     Browser --> SPA
     SPA -->|HTTP JSON| API
@@ -505,7 +505,7 @@ cursorAI-projects/
 |---|------|---------|
 | D-1a | ボードの状態を localStorage に保存する | Phase 1 |
 | D-2a | ページリロード後も localStorage からデータを復元して表示する | Phase 1 |
-| D-1b | ボードの状態を SQLite に保存する（API 経由） | Phase 2 |
+| D-1b | ボードの状態を MySQL に保存する（API 経由） | Phase 2 |
 | D-2b | ページリロード後も API からデータを復元して表示する | Phase 2 |
 
 ---
@@ -525,7 +525,7 @@ cursorAI-projects/
 | セキュリティ | 通信 | ローカル HTTP | 本番 HTTPS はスコープ外 |
 | セキュリティ | 入力 | API 側で文字列長の上限チェック | タイトル最大 **500 文字** 程度（詳細ルール一覧は設けない） |
 | 運用 | デプロイ | ローカル開発のみ | クラウドデプロイはスコープ外 |
-| データ | バックアップ | SQLite ファイルのコピーで可 | 学習用途の簡易バックアップ |
+| データ | バックアップ | `mysqldump` によるダンプで可 | 学習用途の簡易バックアップ |
 | データ | 整合性 | トランザクションで並べ替え更新 | リスト・カードの position 更新は一貫性を保つ |
 
 ---
