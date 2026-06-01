@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trello風タスク管理アプリ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(160deg, #0265a0 0%, #0079bf 60%, #00a0d0 100%);
+      display: flex;
+      flex-direction: column;
+      color: #172b4d;
+    }
+
+    /* ===== ヘッダー ===== */
+    #header {
+      background: rgba(0, 0, 0, 0.18);
+      padding: 0 16px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    #board-title {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      letter-spacing: 0.01em;
+    }
+    #board-title:hover { background: rgba(255,255,255,0.22); }
+
+    #board-title-input {
+      display: none;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 2px solid rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.92);
+      color: #172b4d;
+      outline: none;
+      min-width: 220px;
+    }
+
+    /* ===== ボードエリア ===== */
+    #board {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px 20px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    #board::-webkit-scrollbar { height: 8px; }
+    #board::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+    /* ===== リスト ===== */
+    .list {
+      background: #ebecf0;
+      border-radius: 8px;
+      width: 272px;
+      min-width: 272px;
+      max-height: calc(100vh - 76px);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: opacity 0.1s;
+    }
+
+    .list.is-list-dragging { opacity: 0.45; }
+
+    /* ===== リストヘッダー ===== */
+    .list-header {
+      padding: 10px 8px 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: grab;
+      flex-shrink: 0;
+    }
+    .list-header:active { cursor: grabbing; }
+
+    .list-title-wrap { flex: 1; min-width: 0; }
+
+    .list-title {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #172b4d;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-title:hover { background: rgba(0,0,0,0.07); }
+
+    .list-title-input {
+      display: none;
+      width: 100%;
+      font-size: 14px;
+      font-weight: 700;
+      color: #172b4d;
+      border: 2px solid #1d72b8;
+      border-radius: 3px;
+      padding: 2px 4px;
+      outline: none;
+      background: #fff;
+      font-family: inherit;
+    }
+
+    .list-delete-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b778c;
+      font-size: 15px;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .list-delete-btn:hover { background: rgba(0,0,0,0.1); color: #172b4d; }
+
+    /* ===== カードエリア ===== */
+    .cards-area {
+      padding: 0 8px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 36px;
+      border-radius: 4px;
+      transition: background 0.12s;
+    }
+    .cards-area::-webkit-scrollbar { width: 6px; }
+    .cards-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+    .cards-area.drop-active { background: rgba(0, 121, 191, 0.1); }
+
+    /* ===== カード ===== */
+    .card {
+      background: #fff;
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 2px rgba(9,30,66,0.2), 0 0 0 1px rgba(9,30,66,0.06);
+      cursor: grab;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      transition: box-shadow 0.1s;
+    }
+    .card:active { cursor: grabbing; }
+    .card:hover { box-shadow: 0 4px 8px rgba(9,30,66,0.22), 0 0 0 1px rgba(9,30,66,0.08); }
+    .card.is-dragging { opacity: 0.4; }
+
+    .card-title {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+      cursor: pointer;
+      min-height: 20px;
+    }
+
+    .card-title-input {
+      display: none;
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.45;
+      font-family: inherit;
+      border: none;
+      outline: none;
+      resize: none;
+      background: transparent;
+      color: #172b4d;
+      cursor: text;
+    }
+
+    .card-delete-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b778c;
+      font-size: 13px;
+      width: 22px;
+      height: 22px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .card:hover .card-delete-btn { opacity: 1; }
+    .card-delete-btn:hover { background: rgba(0,0,0,0.1); color: #eb5a46; }
+
+    /* カードのD&Dプレースホルダー */
+    .card-ph {
+      height: 36px;
+      background: #c8d3e6;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    /* ===== カード追加 ===== */
+    .add-card-trigger {
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #5e6c84;
+      border-radius: 0 0 8px 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: inherit;
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s;
+    }
+    .add-card-trigger:hover { background: rgba(0,0,0,0.07); color: #172b4d; }
+
+    .add-card-form {
+      display: none;
+      padding: 4px 8px 8px;
+      flex-shrink: 0;
+    }
+    .add-card-form textarea {
+      width: 100%;
+      border: 2px solid #1d72b8;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      min-height: 56px;
+      background: #fff;
+      line-height: 1.45;
+    }
+
+    /* ===== リスト追加エリア ===== */
+    #add-list-wrap {
+      flex-shrink: 0;
+      width: 272px;
+      min-width: 272px;
+    }
+
+    #add-list-btn {
+      width: 100%;
+      background: rgba(255,255,255,0.22);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      transition: background 0.1s;
+    }
+    #add-list-btn:hover { background: rgba(255,255,255,0.34); }
+
+    #add-list-form {
+      display: none;
+      background: #ebecf0;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    #add-list-form input {
+      width: 100%;
+      border: 2px solid #1d72b8;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      background: #fff;
+      margin-bottom: 6px;
+    }
+
+    /* ===== 共通フォームパーツ ===== */
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .btn-primary {
+      background: #0079bf;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .btn-primary:hover { background: #0265a0; }
+
+    .btn-cancel {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6b778c;
+      font-size: 20px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+    .btn-cancel:hover { color: #172b4d; }
+
+    .val-msg {
+      font-size: 12px;
+      color: #eb5a46;
+      margin-top: 4px;
+      display: none;
+    }
+
+    /* リストのD&Dプレースホルダー */
+    .list-ph {
+      width: 272px;
+      min-width: 272px;
+      background: rgba(255,255,255,0.18);
+      border: 2px dashed rgba(255,255,255,0.4);
+      border-radius: 8px;
+      flex-shrink: 0;
+      min-height: 80px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <span id="board-title"></span>
+  <input id="board-title-input" type="text" placeholder="ボードタイトル">
+</div>
+
+<div id="board">
+  <div id="add-list-wrap">
+    <button id="add-list-btn">＋&nbsp;リストを追加</button>
+    <div id="add-list-form">
+      <input id="new-list-input" type="text" placeholder="リストのタイトルを入力">
+      <div class="form-row">
+        <button class="btn-primary" id="add-list-submit">リストを追加</button>
+        <button class="btn-cancel" id="add-list-cancel">✕</button>
+      </div>
+      <div class="val-msg" id="list-val-msg">タイトルを入力してください</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ─── ストレージ & 状態 ─────────────────────────── */
+const STORAGE_KEY = 'trello-proto-v1';
+
+function defaultState() {
+  return {
+    board: {
+      id: 'b1',
+      title: 'プロジェクトボード',
+      lists: [
+        {
+          id: 'l1', title: '未着手',
+          cards: [
+            { id: 'c1', title: '要件定義書を読む' },
+            { id: 'c2', title: 'ワイヤーフレームを確認する' }
+          ]
+        },
+        {
+          id: 'l2', title: '進行中',
+          cards: [{ id: 'c3', title: 'プロトタイプを作成する' }]
+        },
+        { id: 'l3', title: '完了', cards: [] }
+      ]
+    }
+  };
+}
+
+let state = (() => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : defaultState();
+  } catch { return defaultState(); }
+})();
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function uid()  { return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7); }
+
+/* ─── ドラッグ状態 ─────────────────────────────── */
+const dnd = { type: null, id: null, srcListId: null };
+
+/* ─── レンダリング ─────────────────────────────── */
+function render() {
+  const board   = document.getElementById('board');
+  const addWrap = document.getElementById('add-list-wrap');
+
+  document.getElementById('board-title').textContent = state.board.title;
+
+  board.querySelectorAll('.list, .list-ph').forEach(el => el.remove());
+
+  for (const list of state.board.lists) {
+    board.insertBefore(buildList(list), addWrap);
+  }
+
+  /* リストD&D: ボードエリア */
+  board.ondragover = e => {
+    if (dnd.type !== 'list') return;
+    e.preventDefault();
+
+    const after = getAfterList(board, e.clientX);
+    let ph = board.querySelector('.list-ph');
+    if (!ph) {
+      ph = document.createElement('div');
+      ph.className = 'list-ph';
+    }
+    board.insertBefore(ph, after ?? addWrap);
+  };
+
+  board.ondrop = e => {
+    if (dnd.type !== 'list') return;
+    e.preventDefault();
+
+    const ph = board.querySelector('.list-ph');
+    if (!ph) return;
+
+    const fromIdx = state.board.lists.findIndex(l => l.id === dnd.id);
+    const [moved] = state.board.lists.splice(fromIdx, 1);
+
+    let insertAt = 0;
+    for (const child of board.children) {
+      if (child === ph) break;
+      if (child.classList.contains('list')) insertAt++;
+    }
+    state.board.lists.splice(insertAt, 0, moved);
+
+    dnd.type = null;
+    dnd.id   = null;
+    save();
+    render();
+  };
+
+  board.ondragleave = e => {
+    if (!board.contains(e.relatedTarget)) {
+      board.querySelector('.list-ph')?.remove();
+    }
+  };
+}
+
+/* ─── リスト構築 ────────────────────────────────── */
+function buildList(list) {
+  const wrap = document.createElement('div');
+  wrap.className = 'list';
+  wrap.dataset.lid = list.id;
+
+  /* ヘッダー */
+  const header = document.createElement('div');
+  header.className = 'list-header';
+  header.draggable = true;
+
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'list-title-wrap';
+
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'list-title';
+  titleSpan.textContent = list.title;
+
+  const titleInput = document.createElement('input');
+  titleInput.className = 'list-title-input';
+  titleInput.type = 'text';
+  titleInput.value = list.title;
+
+  titleWrap.appendChild(titleSpan);
+  titleWrap.appendChild(titleInput);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'list-delete-btn';
+  delBtn.title = 'リストを削除';
+  delBtn.textContent = '✕';
+
+  header.appendChild(titleWrap);
+  header.appendChild(delBtn);
+
+  /* カードエリア */
+  const cardsArea = document.createElement('div');
+  cardsArea.className = 'cards-area';
+  for (const card of list.cards) {
+    cardsArea.appendChild(buildCard(card, list.id));
+  }
+
+  /* カード追加 */
+  const addTrigger = document.createElement('button');
+  addTrigger.className = 'add-card-trigger';
+  addTrigger.innerHTML = '<span>＋</span>&nbsp;カードを追加';
+
+  const addForm = document.createElement('div');
+  addForm.className = 'add-card-form';
+  addForm.innerHTML = `
+    <textarea placeholder="カードのタイトルを入力..." rows="3"></textarea>
+    <div class="form-row">
+      <button class="btn-primary js-add-card">カードを追加</button>
+      <button class="btn-cancel js-cancel-card">✕</button>
+    </div>
+    <div class="val-msg">タイトルを入力してください</div>
+  `;
+
+  wrap.appendChild(header);
+  wrap.appendChild(cardsArea);
+  wrap.appendChild(addTrigger);
+  wrap.appendChild(addForm);
+
+  /* ── ヘッダーD&D ── */
+  header.addEventListener('dragstart', e => {
+    e.stopPropagation();
+    dnd.type = 'list';
+    dnd.id   = list.id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => wrap.classList.add('is-list-dragging'), 0);
+  });
+
+  header.addEventListener('dragend', () => {
+    wrap.classList.remove('is-list-dragging');
+    document.querySelector('.list-ph')?.remove();
+    if (dnd.type === 'list') { dnd.type = null; dnd.id = null; }
+  });
+
+  /* ── リストタイトル編集 ── */
+  titleSpan.addEventListener('click', e => {
+    e.stopPropagation();
+    titleSpan.style.display = 'none';
+    titleInput.style.display = 'block';
+    titleInput.focus();
+    titleInput.select();
+  });
+
+  function commitListTitle() {
+    if (!titleInput.isConnected) return;
+    const val = titleInput.value.trim();
+    if (val) {
+      const l = state.board.lists.find(l => l.id === list.id);
+      if (l) { l.title = val; save(); }
+    }
+    render();
+  }
+
+  titleInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); commitListTitle(); }
+    if (e.key === 'Escape') render();
+  });
+  titleInput.addEventListener('blur', () => {
+    setTimeout(() => { if (titleInput.isConnected) commitListTitle(); }, 150);
+  });
+
+  /* ── リスト削除 ── */
+  delBtn.addEventListener('mousedown', e => {
+    e.preventDefault();
+    state.board.lists = state.board.lists.filter(l => l.id !== list.id);
+    save();
+    render();
+  });
+
+  /* ── カードエリアD&D ── */
+  cardsArea.addEventListener('dragenter', e => {
+    if (dnd.type !== 'card') return;
+    e.preventDefault();
+    cardsArea.classList.add('drop-active');
+  });
+
+  cardsArea.addEventListener('dragleave', e => {
+    if (!cardsArea.contains(e.relatedTarget)) {
+      cardsArea.classList.remove('drop-active');
+    }
+  });
+
+  cardsArea.addEventListener('dragover', e => {
+    if (dnd.type !== 'card') return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    let ph = cardsArea.querySelector('.card-ph');
+    if (!ph) {
+      document.querySelector('.card-ph')?.remove();
+      ph = document.createElement('div');
+      ph.className = 'card-ph';
+    }
+
+    const after = getAfterCard(cardsArea, e.clientY);
+    cardsArea.insertBefore(ph, after ?? null);
+  });
+
+  cardsArea.addEventListener('drop', e => {
+    if (dnd.type !== 'card') return;
+    e.preventDefault();
+    e.stopPropagation();
+    cardsArea.classList.remove('drop-active');
+
+    const ph = cardsArea.querySelector('.card-ph');
+    if (!ph) return;
+
+    const srcList = state.board.lists.find(l => l.id === dnd.srcListId);
+    const cardIdx = srcList.cards.findIndex(c => c.id === dnd.id);
+    const [card]  = srcList.cards.splice(cardIdx, 1);
+
+    let insertAt = 0;
+    for (const child of cardsArea.children) {
+      if (child === ph) break;
+      if (child.classList.contains('card')) insertAt++;
+    }
+
+    const destList = state.board.lists.find(l => l.id === list.id);
+    destList.cards.splice(insertAt, 0, card);
+
+    dnd.type = null; dnd.id = null; dnd.srcListId = null;
+    save();
+    render();
+  });
+
+  /* ── カード追加フォーム ── */
+  addTrigger.addEventListener('click', () => {
+    addTrigger.style.display = 'none';
+    addForm.style.display   = 'block';
+    addForm.querySelector('textarea').focus();
+  });
+
+  const textarea = addForm.querySelector('textarea');
+  const valMsg   = addForm.querySelector('.val-msg');
+
+  function submitCard() {
+    const title = textarea.value.trim();
+    if (!title) { valMsg.style.display = 'block'; return; }
+    valMsg.style.display = 'none';
+    const l = state.board.lists.find(l => l.id === list.id);
+    l.cards.push({ id: uid(), title });
+    save();
+    render();
+    setTimeout(() => {
+      const area = document.querySelector(`.list[data-lid="${list.id}"] .cards-area`);
+      if (area) area.scrollTop = area.scrollHeight;
+    }, 0);
+  }
+
+  textarea.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCard(); }
+    if (e.key === 'Escape') {
+      addForm.style.display   = 'none';
+      addTrigger.style.display = 'flex';
+      textarea.value = '';
+    }
+  });
+
+  addForm.querySelector('.js-add-card').addEventListener('click', submitCard);
+  addForm.querySelector('.js-cancel-card').addEventListener('mousedown', e => {
+    e.preventDefault();
+    addForm.style.display   = 'none';
+    addTrigger.style.display = 'flex';
+    textarea.value = '';
+    valMsg.style.display = 'none';
+  });
+
+  return wrap;
+}
+
+/* ─── カード構築 ────────────────────────────────── */
+function buildCard(card, listId) {
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.draggable = true;
+  div.dataset.cid = card.id;
+
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'card-title';
+  titleSpan.textContent = card.title;
+
+  const titleInput = document.createElement('textarea');
+  titleInput.className = 'card-title-input';
+  titleInput.value = card.title;
+  titleInput.rows  = 2;
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'card-delete-btn';
+  delBtn.title     = 'カードを削除';
+  delBtn.textContent = '✕';
+
+  div.appendChild(titleSpan);
+  div.appendChild(titleInput);
+  div.appendChild(delBtn);
+
+  /* D&D */
+  div.addEventListener('dragstart', e => {
+    if (e.target !== div) { e.preventDefault(); return; }
+    e.stopPropagation();
+    dnd.type      = 'card';
+    dnd.id        = card.id;
+    dnd.srcListId = listId;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      div.classList.add('is-dragging');
+      const ph = document.createElement('div');
+      ph.className = 'card-ph';
+      div.after(ph);
+      div.style.display = 'none';
+    }, 0);
+  });
+
+  div.addEventListener('dragend', () => {
+    div.classList.remove('is-dragging');
+    if (div.isConnected) div.style.display = '';
+    document.querySelector('.card-ph')?.remove();
+    if (dnd.type === 'card') { dnd.type = null; dnd.id = null; dnd.srcListId = null; }
+  });
+
+  /* タイトル編集 */
+  titleSpan.addEventListener('click', e => {
+    e.stopPropagation();
+    titleSpan.style.display  = 'none';
+    titleInput.style.display = 'block';
+    titleInput.focus();
+  });
+
+  function commitCardTitle() {
+    if (!titleInput.isConnected) return;
+    const val = titleInput.value.trim();
+    if (val) {
+      for (const l of state.board.lists) {
+        const c = l.cards.find(c => c.id === card.id);
+        if (c) { c.title = val; break; }
+      }
+      save();
+    }
+    render();
+  }
+
+  titleInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitCardTitle(); }
+    if (e.key === 'Escape') render();
+  });
+  titleInput.addEventListener('blur', () => {
+    setTimeout(() => { if (titleInput.isConnected) commitCardTitle(); }, 150);
+  });
+
+  /* 削除 */
+  delBtn.addEventListener('mousedown', e => {
+    e.preventDefault();
+    for (const l of state.board.lists) {
+      const idx = l.cards.findIndex(c => c.id === card.id);
+      if (idx !== -1) { l.cards.splice(idx, 1); break; }
+    }
+    save();
+    render();
+  });
+
+  return div;
+}
+
+/* ─── D&Dヘルパー ───────────────────────────────── */
+function getAfterCard(container, y) {
+  const items = [...container.querySelectorAll('.card')]
+    .filter(el => !el.classList.contains('is-dragging') && el.style.display !== 'none');
+
+  let best = null, bestOffset = -Infinity;
+  for (const el of items) {
+    const { top, height } = el.getBoundingClientRect();
+    const offset = y - top - height / 2;
+    if (offset < 0 && offset > bestOffset) { bestOffset = offset; best = el; }
+  }
+  return best;
+}
+
+function getAfterList(board, x) {
+  const items = [...board.querySelectorAll('.list:not(.is-list-dragging)')];
+  let best = null, bestOffset = -Infinity;
+  for (const el of items) {
+    const { left, width } = el.getBoundingClientRect();
+    const offset = x - left - width / 2;
+    if (offset < 0 && offset > bestOffset) { bestOffset = offset; best = el; }
+  }
+  return best;
+}
+
+/* ─── ボードタイトル ────────────────────────────── */
+(() => {
+  const titleEl  = document.getElementById('board-title');
+  const inputEl  = document.getElementById('board-title-input');
+
+  titleEl.addEventListener('click', () => {
+    inputEl.value        = state.board.title;
+    titleEl.style.display  = 'none';
+    inputEl.style.display  = 'inline-block';
+    inputEl.focus();
+    inputEl.select();
+  });
+
+  function commit() {
+    if (inputEl.style.display === 'none') return;
+    const val = inputEl.value.trim();
+    if (val) state.board.title = val;
+    save();
+    titleEl.textContent    = state.board.title;
+    inputEl.style.display  = 'none';
+    titleEl.style.display  = '';
+  }
+
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') {
+      inputEl.style.display = 'none';
+      titleEl.style.display = '';
+    }
+  });
+  inputEl.addEventListener('blur', () => setTimeout(commit, 150));
+})();
+
+/* ─── リスト追加 ────────────────────────────────── */
+(() => {
+  const btn       = document.getElementById('add-list-btn');
+  const form      = document.getElementById('add-list-form');
+  const input     = document.getElementById('new-list-input');
+  const submitBtn = document.getElementById('add-list-submit');
+  const cancelBtn = document.getElementById('add-list-cancel');
+  const valMsg    = document.getElementById('list-val-msg');
+
+  function showForm() {
+    btn.style.display  = 'none';
+    form.style.display = 'block';
+    input.focus();
+  }
+  function hideForm() {
+    form.style.display = 'none';
+    btn.style.display  = 'flex';
+    input.value        = '';
+    valMsg.style.display = 'none';
+  }
+  function submit() {
+    const title = input.value.trim();
+    if (!title) { valMsg.style.display = 'block'; return; }
+    valMsg.style.display = 'none';
+    state.board.lists.push({ id: uid(), title, cards: [] });
+    save();
+    hideForm();
+    render();
+    setTimeout(() => {
+      const board = document.getElementById('board');
+      board.scrollLeft = board.scrollWidth;
+    }, 0);
+  }
+
+  btn.addEventListener('click', showForm);
+  submitBtn.addEventListener('click', submit);
+  cancelBtn.addEventListener('mousedown', e => { e.preventDefault(); hideForm(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { e.preventDefault(); submit(); }
+    if (e.key === 'Escape') hideForm();
+  });
+})();
+
+/* ─── 初期化 ────────────────────────────────────── */
+render();
+</script>
+</body>
+</html>
