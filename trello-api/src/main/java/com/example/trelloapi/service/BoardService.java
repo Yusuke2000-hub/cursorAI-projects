@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,6 +17,13 @@ import java.util.stream.Collectors;
 public class BoardService {
 
     private final BoardRepository boardRepository;
+
+    @Transactional(readOnly = true)
+    public List<BoardDto> getAllBoards() {
+        return boardRepository.findAll().stream()
+            .map(this::toDto)
+            .collect(Collectors.toList());
+    }
 
     @Transactional(readOnly = true)
     public BoardDto getDefaultBoard() {
