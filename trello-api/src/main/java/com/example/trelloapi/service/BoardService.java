@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +43,15 @@ public class BoardService {
         return toDto(boardRepository.save(board));
     }
 
+
+    // ID指定で1件取得
+    @Transactional(readOnly = true)
+    public BoardDto getBoardById(UUID id) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Board not found: " + id));
+        return toDto(board);
+    }
+
     public BoardDto toDto(Board board) {
         return new BoardDto(
             board.getId(),
@@ -72,3 +82,4 @@ public class BoardService {
         );
     }
 }
+
