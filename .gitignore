@@ -1,2 +1,8 @@
 
 src/main/resources/application.yml
+
+# フロントエンド
+trello-app/node_modules/
+trello-app/dist/
+trello-app/.env
+trello-app/.env.local
