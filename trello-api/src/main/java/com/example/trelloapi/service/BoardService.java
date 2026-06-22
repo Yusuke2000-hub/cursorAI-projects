@@ -35,6 +35,14 @@ public class BoardService {
     }
 
     @Transactional
+    public BoardDto createBoard(String title) {
+        Board board = new Board();
+        board.setTitle(title);
+        board.setPosition(boardRepository.findAll().size());
+        return toDto(boardRepository.save(board));
+    }
+
+    @Transactional
     public BoardDto updateTitle(String title) {
         Board board = boardRepository.findAll().stream()
             .findFirst()
