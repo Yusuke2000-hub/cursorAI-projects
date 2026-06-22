@@ -1,10 +1,16 @@
 package com.example.trelloapi.controller;
 
 import com.example.trelloapi.dto.BoardDto;
+import com.example.trelloapi.dto.request.TitleRequest;
 import com.example.trelloapi.service.BoardService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +28,13 @@ public class BoardController {
     @GetMapping
     public List<BoardDto> getBoards() {
         return boardService.getAllBoards();
+    }
+
+    // 新規作成
+    @PostMapping
+    public ResponseEntity<BoardDto> createBoard(@Valid @RequestBody TitleRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(boardService.createBoard(request.title()));
     }
 
     // ID指定で1件取得
