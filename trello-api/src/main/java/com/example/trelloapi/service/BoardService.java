@@ -60,6 +60,14 @@ public class BoardService {
         return toDto(board);
     }
 
+    @Transactional
+    public BoardDto updateBoard(UUID id, String title) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Board not found: " + id));
+        board.setTitle(title);
+        return toDto(boardRepository.save(board));
+    }
+
     public BoardDto toDto(Board board) {
         return new BoardDto(
             board.getId(),
