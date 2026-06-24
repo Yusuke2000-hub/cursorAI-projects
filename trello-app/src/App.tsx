@@ -55,6 +55,9 @@ function App() {
       .then((data: ApiBoard[]) => {
         console.log('GET /api/boards:', data);
         setApiBoards(data);
+        if (data.length > 0) {
+          setBoard(prev => ({ ...prev, id: data[0].id, title: data[0].title }));
+        }
       })
       .catch((err) => {
         console.error('boards取得エラー:', err);

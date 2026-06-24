@@ -29,10 +29,28 @@ export function Board({ board, onUpdateBoard }: Props) {
     if (addingList) listInputRef.current?.focus();
   }, [addingList]);
 
-  function commitBoardTitle() {
+  async function commitBoardTitle() {
     const trimmed = titleDraft.trim();
-    if (trimmed) onUpdateBoard({ ...board, title: trimmed });
-    else setTitleDraft(board.title);
+    if (!trimmed) {
+      setTitleDraft(board.title);
+      setEditingTitle(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/boards/${board.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      if (res.ok) {
+        onUpdateBoard({ ...board, title: trimmed });
+      } else {
+        console.error('ボードタイトル更新エラー:', res.status, res.statusText);
+      }
+    } catch (err) {
+      console.error('ボードタイトル更新エラー:', err);
+    }
     setEditingTitle(false);
   }
 
