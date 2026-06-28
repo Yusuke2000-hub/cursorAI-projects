@@ -7,13 +7,14 @@ import styles from './Board.module.css';
 type Props = {
   board: BoardType;
   onUpdateBoard: (board: BoardType) => void;
+  onDeleteBoard: (id: string) => void;
 };
 
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export function Board({ board, onUpdateBoard }: Props) {
+export function Board({ board, onUpdateBoard, onDeleteBoard }: Props) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(board.title);
   const [addingList, setAddingList] = useState(false);
@@ -28,6 +29,11 @@ export function Board({ board, onUpdateBoard }: Props) {
   useEffect(() => {
     if (addingList) listInputRef.current?.focus();
   }, [addingList]);
+
+  function handleDeleteBoard() {
+    if (!window.confirm(`「${board.title}」を削除しますか？`)) return;
+    onDeleteBoard(board.id);
+  }
 
   async function commitBoardTitle() {
     const trimmed = titleDraft.trim();
@@ -160,6 +166,7 @@ export function Board({ board, onUpdateBoard }: Props) {
             {board.title}
           </h1>
         )}
+        <button className={styles.deleteBtn} onClick={handleDeleteBoard}>×</button>
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
