@@ -68,6 +68,11 @@ public class BoardService {
         return toDto(boardRepository.save(board));
     }
 
+    @Transactional
+    public void deleteBoard(UUID id) {
+        boardRepository.deleteById(id);
+    }
+
     public BoardDto toDto(Board board) {
         return new BoardDto(
             board.getId(),
