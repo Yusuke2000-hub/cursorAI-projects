@@ -72,6 +72,19 @@ function App() {
     fetchBoards();
   }, []);
 
+  const handleDeleteBoard = async (id: string) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/boards/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('ボード削除に失敗しました');
+      await fetchBoards();
+    } catch (err) {
+      console.error('boards削除エラー:', err);
+      setError(true);
+    }
+  };
+
   const handleCreateBoard = async (e: React.FormEvent) => {
     e.preventDefault();
     const title = newBoardTitle.trim();
@@ -119,7 +132,7 @@ function App() {
           </button>
         </form>
       </div>
-      <Board board={board} onUpdateBoard={setBoard} />
+      <Board board={board} onUpdateBoard={setBoard} onDeleteBoard={handleDeleteBoard} />
     </div>
   );
 }
