@@ -4,6 +4,7 @@ import com.example.trelloapi.dto.BoardDto;
 import com.example.trelloapi.dto.CardDto;
 import com.example.trelloapi.dto.ListDto;
 import com.example.trelloapi.entity.Board;
+import com.example.trelloapi.exception.ResourceNotFoundException;
 import com.example.trelloapi.repository.BoardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class BoardService {
     public BoardDto getDefaultBoard() {
         Board board = boardRepository.findAll().stream()
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("Board not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
         return toDto(board);
     }
 
@@ -46,7 +47,7 @@ public class BoardService {
     public BoardDto updateTitle(String title) {
         Board board = boardRepository.findAll().stream()
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("Board not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
         board.setTitle(title);
         return toDto(boardRepository.save(board));
     }
@@ -56,14 +57,14 @@ public class BoardService {
     @Transactional(readOnly = true)
     public BoardDto getBoardById(UUID id) {
         Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Board not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Board", id));
         return toDto(board);
     }
 
     @Transactional
     public BoardDto updateBoard(UUID id, String title) {
         Board board = boardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Board not found: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Board", id));
         board.setTitle(title);
         return toDto(boardRepository.save(board));
     }
