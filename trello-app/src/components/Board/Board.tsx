@@ -17,6 +17,7 @@ function generateId() {
 export function Board({ board, onUpdateBoard, onDeleteBoard }: Props) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(board.title);
+  const [titleError, setTitleError] = useState<string | null>(null);
   const [addingList, setAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -39,6 +40,7 @@ export function Board({ board, onUpdateBoard, onDeleteBoard }: Props) {
     const trimmed = titleDraft.trim();
     if (!trimmed) {
       setTitleDraft(board.title);
+      setTitleError(null);
       setEditingTitle(false);
       return;
     }
@@ -50,14 +52,15 @@ export function Board({ board, onUpdateBoard, onDeleteBoard }: Props) {
         body: JSON.stringify({ title: trimmed }),
       });
       if (res.ok) {
+        setTitleError(null);
         onUpdateBoard({ ...board, title: trimmed });
+        setEditingTitle(false);
       } else {
-        console.error('ボードタイトル更新エラー:', res.status, res.statusText);
+        setTitleError('タイトルの更新に失敗しました。もう一度お試しください。');
       }
-    } catch (err) {
-      console.error('ボードタイトル更新エラー:', err);
+    } catch {
+      setTitleError('ネットワークエラーが発生しました。もう一度お試しください。');
     }
-    setEditingTitle(false);
   }
 
   function addList() {
@@ -150,17 +153,20 @@ export function Board({ board, onUpdateBoard, onDeleteBoard }: Props) {
     <div className={styles.board}>
       <header className={styles.header}>
         {editingTitle ? (
-          <input
-            ref={titleInputRef}
-            className={styles.titleInput}
-            value={titleDraft}
-            onChange={e => setTitleDraft(e.target.value)}
-            onBlur={commitBoardTitle}
-            onKeyDown={e => {
-              if (e.key === 'Enter') commitBoardTitle();
-              if (e.key === 'Escape') { setTitleDraft(board.title); setEditingTitle(false); }
-            }}
-          />
+          <div className={styles.titleEditWrapper}>
+            <input
+              ref={titleInputRef}
+              className={`${styles.titleInput}${titleError ? ` ${styles.titleInputError}` : ''}`}
+              value={titleDraft}
+              onChange={e => { setTitleDraft(e.target.value); setTitleError(null); }}
+              onBlur={commitBoardTitle}
+              onKeyDown={e => {
+                if (e.key === 'Enter') commitBoardTitle();
+                if (e.key === 'Escape') { setTitleDraft(board.title); setTitleError(null); setEditingTitle(false); }
+              }}
+            />
+            {titleError && <p className={styles.titleError}>{titleError}</p>}
+          </div>
         ) : (
           <h1 className={styles.title} onClick={() => setEditingTitle(true)}>
             {board.title}
