@@ -50,10 +50,12 @@ public class ListService {
 
     @Transactional
     public void reorderLists(List<ReorderItem> items) {
-        items.forEach(item -> boardListRepository.findById(item.id()).ifPresent(list -> {
+        items.forEach(item -> {
+            BoardList list = boardListRepository.findById(item.id())
+                .orElseThrow(() -> new RuntimeException("List not found: " + item.id()));
             list.setPosition(item.position());
             boardListRepository.save(list);
-        }));
+        });
     }
 
     private ListDto toDto(BoardList list) {
