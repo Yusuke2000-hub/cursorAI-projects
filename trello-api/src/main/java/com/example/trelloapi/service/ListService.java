@@ -5,6 +5,7 @@ import com.example.trelloapi.dto.ListDto;
 import com.example.trelloapi.dto.request.ReorderItem;
 import com.example.trelloapi.entity.Board;
 import com.example.trelloapi.entity.BoardList;
+import com.example.trelloapi.exception.ResourceNotFoundException;
 import com.example.trelloapi.repository.BoardListRepository;
 import com.example.trelloapi.repository.BoardRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class ListService {
     public ListDto createList(String title) {
         Board board = boardRepository.findAll().stream()
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("Board not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
 
         BoardList list = new BoardList();
         list.setBoard(board);
@@ -38,7 +39,7 @@ public class ListService {
     @Transactional
     public ListDto updateTitle(UUID id, String title) {
         BoardList list = boardListRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("List not found: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("List", id));
         list.setTitle(title);
         return toDto(boardListRepository.save(list));
     }
@@ -52,7 +53,7 @@ public class ListService {
     public void reorderLists(List<ReorderItem> items) {
         items.forEach(item -> {
             BoardList list = boardListRepository.findById(item.id())
-                .orElseThrow(() -> new RuntimeException("List not found: " + item.id()));
+                .orElseThrow(() -> new ResourceNotFoundException("List", item.id()));
             list.setPosition(item.position());
             boardListRepository.save(list);
         });
