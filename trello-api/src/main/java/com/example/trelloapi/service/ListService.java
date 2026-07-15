@@ -27,7 +27,7 @@ public class ListService {
     public ListDto createList(String title) {
         Board board = boardRepository.findAll().stream()
             .findFirst()
-            .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Board", "default"));
 
         BoardList list = new BoardList();
         list.setBoard(board);

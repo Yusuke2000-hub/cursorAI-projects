@@ -31,7 +31,7 @@ public class BoardService {
     public BoardDto getDefaultBoard() {
         Board board = boardRepository.findAll().stream()
             .findFirst()
-            .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Board", "default"));
         return toDto(board);
     }
 
@@ -47,7 +47,7 @@ public class BoardService {
     public BoardDto updateTitle(String title) {
         Board board = boardRepository.findAll().stream()
             .findFirst()
-            .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Board", "default"));
         board.setTitle(title);
         return toDto(boardRepository.save(board));
     }
