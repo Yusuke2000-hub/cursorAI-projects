@@ -9,5 +9,4 @@ public record CardDto(
     String title,
     int position,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
-) {}
+    LocalDateTime updatedAt) {}

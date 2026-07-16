@@ -11,5 +11,4 @@ public record ListDto(
     int position,
     List<CardDto> cards,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
-) {}
+    LocalDateTime updatedAt) {}
