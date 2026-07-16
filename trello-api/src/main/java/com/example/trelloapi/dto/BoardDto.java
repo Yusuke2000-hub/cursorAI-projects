@@ -10,5 +10,4 @@ public record BoardDto(
     int position,
     List<ListDto> lists,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
-) {}
+    LocalDateTime updatedAt) {}
