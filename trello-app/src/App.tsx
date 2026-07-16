@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Board } from './components/Board/Board';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { Board as BoardType } from './types';
@@ -47,30 +47,29 @@ function App() {
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const fetchBoards = () => {
+  const fetchBoards = useCallback(async () => {
     setLoading(true);
     setError(false);
-    return fetch('http://localhost:8080/api/boards')
-      .then((res) => res.json())
-      .then((data: ApiBoard[]) => {
-        console.log('GET /api/boards:', data);
-        setApiBoards(data);
-        if (data.length > 0) {
-          setBoard(prev => ({ ...prev, id: data[0].id, title: data[0].title }));
-        }
-      })
-      .catch((err) => {
-        console.error('boards取得エラー:', err);
-        setError(true);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+    try {
+      const res = await fetch('http://localhost:8080/api/boards');
+      const data: ApiBoard[] = await res.json();
+      console.log('GET /api/boards:', data);
+      setApiBoards(data);
+      if (data.length > 0) {
+        setBoard(prev => ({ ...prev, id: data[0].id, title: data[0].title }));
+      }
+    } catch (err) {
+      console.error('boards取得エラー:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [setBoard]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBoards();
-  }, []);
+  }, [fetchBoards]);
 
   const handleDeleteBoard = async (id: string) => {
     try {
