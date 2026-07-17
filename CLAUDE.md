@@ -15,22 +15,34 @@ RaiseTech AI講座・Trello風タスク管理アプリ
 - ブランチ名はIssue番号と連動させる
   例：feature/1-board-list-api
 - マージ後はブランチを削除する
+- PR作成時は本文に `Closes #{issue番号}` を含め、マージ時に自動クローズさせる
+- モノレポ構成のため、`git add` 時はファイルを明示的に指定し、フロントエンド/バックエンドの変更を混在させない
 
 ### コーディングルール
 - レイヤードアーキテクチャを厳守する
   Controller → Service → Repository → DB
 - ControllerはRepositoryを直接呼ばない
 - 1メソッド1責務で書く
+- バックエンド: Spotless（google-java-format）でフォーマット統一。コミット前に spotlessApply を実行
+- フロントエンド: ESLintでチェック。npm run lint をエラー・警告ゼロで通過させること
+- 例外処理: orElseThrow を用い、GlobalExceptionHandler（@RestControllerAdvice）で一元管理する
 
 ### 技術スタック
 - Java 21（Microsoft OpenJDK）
 - Spring Boot 4.0.0
 - PostgreSQL 18.4
 - Gradle 8.14
+- フロントエンド: React 19, TypeScript, Vite（trello-app）
 
 ### 作業前の確認事項
 - JAVA_HOME が設定されているか確認する
 - bootRun終了時は必ずCtrl+Cで停止する
+- npm run dev終了時も必ずCtrl+Cで停止する
+
+## 作業スタイル
+
+- 変更は一度に大きくまとめず、1件ずつ確認しながら進める（planモードでの手動承認を前提とする）
+- 変更理由（なぜその修正が必要か）を明確にしてから実装する
 
 ## ポート管理ルール
 - バックエンド：localhost:8080（変更禁止）
