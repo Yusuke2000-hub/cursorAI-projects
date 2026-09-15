@@ -46,7 +46,7 @@ export function Board({ board, onUpdateBoard, onDeleteBoard }: Props) {
     }
 
     try {
-      const res = await fetch(`http://localhost:8080/api/boards/${board.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${board.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: trimmed }),

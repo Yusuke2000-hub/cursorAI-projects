@@ -51,7 +51,7 @@ function App() {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch('http://localhost:8080/api/boards');
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/boards`);
       const data: ApiBoard[] = await res.json();
       console.log('GET /api/boards:', data);
       setApiBoards(data);
@@ -73,7 +73,7 @@ function App() {
 
   const handleDeleteBoard = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/boards/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/boards/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('ボード削除に失敗しました');
@@ -91,7 +91,7 @@ function App() {
 
     setCreating(true);
     try {
-      const res = await fetch('http://localhost:8080/api/boards', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/boards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title }),
